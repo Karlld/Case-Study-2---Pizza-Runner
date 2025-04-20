@@ -68,24 +68,25 @@ How many pizzas were ordered?
 ```SQL
 SELECT COUNT(pizza_id) AS total_pizza_order 
 FROM customer_orders;
+```
 
 | total_pizza_ordered |
 |---------------------|
 |       14            |
 
-```
+
 
 How many unique customer orders were made?
 
 ```sql
 SELECT COUNT(DISTINCT(order_id)) AS total_orders 
        FROM customer_orders 
-
+```
 | total_orders |
 |--------------|
 |  10  |
 
-```
+
 
 How many successful orders were delivered by each runner?
 
@@ -95,6 +96,7 @@ FROM runner_orders
 WHERE cancellation ISNULL 
 GROUP BY runner_id
 ORDER BY runner_id;
+```
 
 | runner_id | total_orders |
 |-----------|--------------|
@@ -102,7 +104,7 @@ ORDER BY runner_id;
 | 2	 |           3   |
 | 3	 |           1   |
 
-```
+
 
 
 How many of each type of pizza was delivered?
@@ -115,13 +117,13 @@ SELECT p.pizza_name, COUNT(c.pizza_id) AS Pizzas_sold
 					WHERE r.cancellation isnull
                     GROUP BY p.pizza_name;
 
-
+```
 | pizza_name | pizzas_sold |
 |------------|-------------|					
 | Meatlovers |	9 |
 | Vegetarian |	3  |
 
-```
+
 
 How many Vegetarian and Meatlovers were ordered by each customer?
 
@@ -138,6 +140,7 @@ SELECT c.customer_id, COUNT(CASE WHEN p.pizza_name = 'Meatlovers' THEN 1
 					GROUP BY c.customer_id
 					ORDER BY customer_id; 
 
+```
 | customer_id  |  meatlovers  | vegetarian |
 |--------------|--------------|------------|
 | 101	|              2	|                     0 |
@@ -146,7 +149,7 @@ SELECT c.customer_id, COUNT(CASE WHEN p.pizza_name = 'Meatlovers' THEN 1
 | 104	|              3	|                     0 |
 | 105	|              0	|                     1 |
 
-```
+
 					
 What was the maximum number of pizzas delivered in a single order?
 
@@ -159,6 +162,7 @@ SELECT c.order_id, COUNT(c.pizza_id) AS Max_pizzas_del
 					GROUP BY c.order_id
 					ORDER BY max_pizzas_del DESC
 					LIMIT 1;
+```
 					
 | order_id |	max_pizzas_del |
 | 4	  |                 3  |
@@ -176,7 +180,7 @@ SELECT c.customer_id, COUNT(CASE WHEN c.extras NOTNULL OR c.exclusions notnull T
 		 GROUP BY c.customer_id
 		 ORDER BY c.customer_id; 
 		
-
+```
 | customer_id | pizza_changes  |  no_changes  |
 |-------------|----------------|--------------|
 | 101 |	              0 |	                            2 |
@@ -185,7 +189,7 @@ SELECT c.customer_id, COUNT(CASE WHEN c.extras NOTNULL OR c.exclusions notnull T
 | 104 |	              1 |	                            2 |
 | 105 |	              0 |	                            1 |
 
-```
+
 
 How many pizzas were delivered that had both exclusions and extras?
 
