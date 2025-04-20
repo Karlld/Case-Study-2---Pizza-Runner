@@ -31,7 +31,7 @@ ALTER COLUMN duration TYPE VARCHAR(10)
 ALTER TABLE runner_orders 
 ALTER COLUMN cancellation TYPE VARCHAR(23) 
 using case  
-         WHEN cancellation = ‘null’ or cancellation = 'Nan' THEN null
+         WHEN cancellation = ‘null’ OR cancellation = 'Nan' THEN null
        ELSE NULLIF(cancellation, '') 
        END::VARCHAR(23);
 
@@ -46,10 +46,10 @@ SET duration_mins = REPLACE(REPLACE(REPLACE(duration_mins, 'mins', ''), 'minutes
 
 
 UPDATE runner_orders
-set distance_km = REPLACE(distance_km, 'km', '')
+SET distance_km = REPLACE(distance_km, 'km', '')
 
 UPDATE runner_orders
-set duration_mins = TRIM(duration_mins), distance_km = TRIM(distance_km)
+SET duration_mins = TRIM(duration_mins), distance_km = TRIM(distance_km)
 
 
 ALTER TABLE runner_orders
