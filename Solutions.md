@@ -165,6 +165,7 @@ SELECT c.order_id, COUNT(c.pizza_id) AS Max_pizzas_del
 ```
 					
 | order_id |	max_pizzas_del |
+|----------|-------------------|
 | 4	  |                 3  |
 
 For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
@@ -220,14 +221,14 @@ ORDER BY hour;
 
 ```
 
-| pizzas_ordered | hour |
-|----------------|------|
-    |   1	      |                 11  |
-     |  3	       |               13 |
-     |  3	       |                18 | 
-     |  1	       |                19 |
-     |  3	       |                21 |
-     |  3	       |                23 |
+| pizzas_ordered | hour     |
+|----------------|----------|
+|   1 |             11  |
+|  3	       |        13 |
+|  3	  |             18 | 
+|  1	    |           19 |
+|  3	    |           21 |
+|  3	    |           23 |
 
 
 
