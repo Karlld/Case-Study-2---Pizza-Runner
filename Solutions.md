@@ -673,6 +673,163 @@ WITH topping_count AS (SELECT c.row_id, c.order_id, c.customer_id,
 | Peppers   |	3  |
 |Tomato Sauce  |	3   |
 
+**D. Pricing and Ratings**
+
+1.If a Meat Lovers pizza costs $12 and Vegetarian costs $10 and there were no charges for changes - how much money has Pizza Runner made so far if there are no delivery fees?
+
+```sql
+SELECT SUM(pizza_price) AS "total_sales_$" FROM
+	                  (SELECT c.order_id, c.pizza_id,
+                      CASE WHEN c.pizza_id = 1 THEN 12
+	                  ELSE 10
+		              END AS pizza_price
+					FROM customer_orders c
+					  JOIN runner_orders r ON r.order_id = c.order_id
+		            WHERE cancellation ISNULL)
+```	   
+
+| total_sales_$ |
+|---------------|
+|      138   |
+
+2.What if there was an additional $1 charge for any pizza extras?
+Add cheese is $1 extra
+
+```sql
+CREATE TEMPORARY TABLE split_extras AS
+SELECT c.row_id, CAST(TRIM(e.extras) AS INT) AS extra_id
+FROM customer_orders c 
+LEFT JOIN UNNEST(STRING_TO_ARRAY(c.extras, ',')) AS e(extras) ON true;
+
+WITH total_pizzas AS (SELECT SUM(pizza_price) AS total_pizzas FROM
+	                  (SELECT c.order_id, c.pizza_id,
+                      CASE WHEN c.pizza_id = 1 THEN 12
+	                  ELSE 10
+		              END AS pizza_price
+					FROM customer_orders c
+					  JOIN runner_orders r ON r.order_id = c.order_id
+		            WHERE cancellation ISNULL)),
+		   
+total_extras AS (SELECT SUM(extra_cost) AS total_extras FROM
+	                  (SELECT CASE WHEN e.extra_id = 4 THEN 2
+					   WHEN e.extra_id ISNULL THEN 0
+	                   ELSE 1
+		               END AS extra_cost
+					FROM split_extras e
+					   JOIN customer_orders c ON c.row_id = e.row_id
+					 JOIN runner_orders r ON r.order_id = c.order_id
+		            WHERE r.cancellation ISNULL))
+					
+       SELECT total_pizzas+total_extras AS total_sales
+               FROM total_pizzas, total_extras 
+
+```
+
+|  total_sales  |
+|---------------|
+|     143      |
+
+
+3.The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, how would you design an additional table for this new dataset - generate a schema for this new table and insert your own data for ratings for each successful customer order between 1 to 5.
+
+```sql
+
+CREATE TABLE runner_ratings 
+(order_id INT, rating INT, check (rating between 1 AND 5))
+
+							 
+INSERT INTO runner_ratings (order_id, rating)
+values
+  (1,4),(2,2),(3,4),(4,2),(5,2),(7,1),(8,5),(10,3);
+
+SELECT * FROM runner_ratings;
+
+```
+
+|  order_id  |   rating  |
+|------------|-----------|
+| 1	|          4  |
+| 2	|            2 |
+| 3	|            4 |
+| 4	|           2 |
+| 5	|            2 |
+| 7	|            1 |
+| 8	|           5 |
+| 10	|           3 |
+
+							 
+4.Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
+customer_id
+order_id
+runner_id
+rating
+order_time
+pickup_time
+Time between order and pickup
+Delivery duration
+Average speed
+Total number of pizzas
+
+```sql
+WITH average_speed_ms AS (SELECT order_id, 
+CEIL((distance_km*1000)/(duration_mins*60)) AS average_speed_ms
+FROM runner_orders 
+WHERE cancellation ISNULL
+ORDER BY runner_id)
+
+SELECT c.customer_id, c.order_id, r.runner_id,
+        s.rating, c.order_time, r.pickup_time, (r.pickup_time-c.order_time)AS prep_time,
+		r.duration_mins, a.average_speed_ms, count(c.pizza_id)AS total_pizza
+		FROM customer_orders c 
+		JOIN runner_orders r ON r.order_id = c.order_id 
+		JOIN runner_ratings s ON s.order_id = c.order_id
+		JOIN average_speed_ms a ON a.order_id = c.order_id
+		GROUP BY c.order_id, c.customer_id, 
+		r.runner_id, s.rating, c.order_time, r.pickup_time,
+		r.duration_mins, a.average_speed_ms;
+```
+
+| customer_id |	order_id |  runner_id | rating | order_time | pickup_time | prep_time | duration_mins | average_speed_ms | total_pizza |
+|-------------|----------|------------|--------|------------|-------------|-----------|---------------|------------------|-------------|
+| 101 |	1  |	1 |	4 |	2020-01-01 18:05:02 |	2020-01-01 18:15:34 |	00:10:32 |	32 |	11 |	1 |
+| 101 |	2  |	1 |	2 |	2020-01-01 19:00:52 |	2020-01-01 19:10:54 |	00:10:02 |	27 |	13 |	1 |
+| 102 |	3  |	1 |	4 |	2020-01-02 23:51:23 |	2020-01-03 00:12:37 |	00:21:14 |	20 | 	12 |	2 | 
+| 103 |	4  |	2 |	2 |	2020-01-04 13:23:46 |	2020-01-04 13:53:03 |	00:29:17 |	40 |	10 | 	3 |
+| 104 |	5  |	3 |	2 |	2020-01-08 21:00:29 |	2020-01-08 21:10:57 |	00:10:28 |	15 |	12 |	1 |
+| 105 |	7 |	2 |	1 |     2020-01-08 21:20:29 |	2020-01-08 21:30:45 |	00:10:16 |	25 |	17 |	1 |
+| 102 |	8  |	2 |	5 |	 2020-01-09 23:54:33 |	2020-01-10 00:15:02 | 	00:20:29 |	15 | 	26 |	1 |
+| 104 |	10 |	1 |	3 |	2020-01-11 18:34:49 |  2020-01-11 18:50:20 |	00:15:31 |	10 |	17 |	2 |
+
+
+
+
+5.If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled - how much money does Pizza Runner have left over after these deliveries?
+
+```sql
+CREATE TEMPORARY TABLE runner_fees 
+AS select runner_id, order_id,
+(distance_km*0.3) AS runner_fee 
+FROM runner_orders
+
+WITH total_sales AS (select sum(pizza_price) AS total_sales FROM
+                       (SELECT c.order_id, c.pizza_id,
+                         CASE WHEN c.pizza_id = 1 THEN 12
+	                          ELSE 10
+		                      END AS pizza_price
+					     FROM customer_orders c
+				        JOIN runner_orders r ON r.order_id = c.order_id
+				          WHERE cancellation ISNULL) AS prices),
+		
+	total_fees AS (SELECT SUM(runner_fee) AS total_fees FROM runner_fees)
+
+				 SELECT (total_sales-total_fees) AS Total_profit
+				 FROM total_sales, total_fees
+```
+
+| total_profit |
+|--------------|
+|   94.44  |
+
 
 
 				
